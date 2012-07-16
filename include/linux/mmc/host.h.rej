@@ -1,0 +1,67 @@
+***************
+*** 12,17 ****
+  
+  #include <linux/leds.h>
+  #include <linux/sched.h>
+  
+  #include <linux/mmc/core.h>
+  #include <linux/mmc/pm.h>
+--- 12,18 ----
+  
+  #include <linux/leds.h>
+  #include <linux/sched.h>
++ #include <linux/fault-inject.h>
+  
+  #include <linux/mmc/core.h>
+  #include <linux/mmc/pm.h>
+***************
+*** 108,113 ****
+  	 * It is optional for the host to implement pre_req and post_req in
+  	 * order to support double buffering of requests (prepare one
+  	 * request while another request is active).
+  	 */
+  	void	(*post_req)(struct mmc_host *host, struct mmc_request *req,
+  			    int err);
+--- 109,117 ----
+  	 * It is optional for the host to implement pre_req and post_req in
+  	 * order to support double buffering of requests (prepare one
+  	 * request while another request is active).
++ 	 * pre_req() must always be followed by a post_req().
++ 	 * To undo a call made to pre_req(), call post_req() with
++ 	 * a nonzero err condition.
+  	 */
+  	void	(*post_req)(struct mmc_host *host, struct mmc_request *req,
+  			    int err);
+***************
+*** 147,152 ****
+  	int	(*execute_tuning)(struct mmc_host *host);
+  	void	(*enable_preset_value)(struct mmc_host *host, bool enable);
+  	int	(*select_drive_strength)(unsigned int max_dtr, int host_drv, int card_drv);
+  };
+  
+  struct mmc_card;
+--- 151,157 ----
+  	int	(*execute_tuning)(struct mmc_host *host);
+  	void	(*enable_preset_value)(struct mmc_host *host, bool enable);
+  	int	(*select_drive_strength)(unsigned int max_dtr, int host_drv, int card_drv);
++ 	void	(*hw_reset)(struct mmc_host *host);
+  };
+  
+  struct mmc_card;
+***************
+*** 408,411 ****
+  {
+  	return host->caps & MMC_CAP_CMD23;
+  }
+  #endif /* LINUX_MMC_HOST_H */
+--- 431,440 ----
+  {
+  	return host->caps & MMC_CAP_CMD23;
+  }
++ 
++ static inline int mmc_boot_partition_access(struct mmc_host *host)
++ {
++ 	return !(host->caps2 & MMC_CAP2_BOOTPART_NOACC);
++ }
++ 
+  #endif /* LINUX_MMC_HOST_H */

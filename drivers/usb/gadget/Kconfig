@@ -595,6 +595,12 @@ config USB_CI13XXX_MSM
 	default USB_GADGET
 	select USB_GADGET_SELECTED
 
+config USB_DWC_OTG_LPM
+	boolean "Enable LPM support"
+	depends on USB && EXPERIMENTAL
+	help
+	   Enables LPM support.
+
 #
 # LAST -- dummy/emulated controller
 #
