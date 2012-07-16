@@ -99,20 +99,20 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
 	phys_addr_t this_start, this_end, cand;
 	u64 i;
 
-	/* align @size to avoid excessive fragmentation on reserved array */
-	size = round_up(size, align);
-
 	/* pump up @end */
 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
 		end = memblock.current_limit;
 
-	/* adjust @start to avoid underflow and allocating the first page */
-	start = max3(start, size, (phys_addr_t)PAGE_SIZE);
+	/* avoid allocating the first page */
+	start = max_t(phys_addr_t, start, PAGE_SIZE);
 	end = max(start, end);
 
 	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
 		this_start = clamp(this_start, start, end);
 		this_end = clamp(this_end, start, end);
+
+		if (this_end < size)
+			continue;
 
 		cand = round_down(this_end - size, align);
 		if (cand >= this_start)
@@ -330,6 +330,9 @@ static int __init_memblock memblock_add_region(struct memblock_type *type,
 	phys_addr_t end = base + memblock_cap_size(base, &size);
 	int i, nr_new;
 
+	if (!size)
+		return 0;
+
 	/* special case for empty array */
 	if (type->regions[0].size == 0) {
 		WARN_ON(type->cnt != 1 || type->total_size);
@@ -430,6 +433,9 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
 
 	*start_rgn = *end_rgn = 0;
 
+	if (!size)
+		return 0;
+
 	/* we'll create at most two more regions */
 	while (type->cnt + 2 > type->max)
 		if (memblock_double_array(type) < 0)
@@ -514,7 +520,6 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
 		     (unsigned long long)base,
 		     (unsigned long long)base + size,
 		     (void *)_RET_IP_);
-	BUG_ON(0 == size);
 
 	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
 }
@@ -727,6 +732,9 @@ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
 					int nid)
 {
 	phys_addr_t found;
+
+	/* align @size to avoid excessive fragmentation on reserved array */
+	size = round_up(size, align);
 
 	found = memblock_find_in_range_node(0, max_addr, size, align, nid);
 	if (found && !memblock_reserve(found, size))

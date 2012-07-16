@@ -199,7 +199,7 @@ static void usb_tranzport_abort_transfers(struct usb_tranzport *dev)
 		struct usb_interface *intf = to_usb_interface(dev);	\
 		struct usb_tranzport *t = usb_get_intfdata(intf);	\
 		unsigned long temp;	\
-		if (strict_strtoul(buf, 10, &temp))	\
+		if (kstrtoul(buf, 10, &temp))	\
 			return -EINVAL;	\
 		t->value = temp;	\
 		return count;	\
@@ -471,7 +471,7 @@ exit:
 /**
  *	usb_tranzport_poll
  */
-static unsigned int usb_tranzport_poll(struct file *file, poll_table * wait)
+static unsigned int usb_tranzport_poll(struct file *file, poll_table *wait)
 {
 	struct usb_tranzport *dev;
 	unsigned int mask = 0;
